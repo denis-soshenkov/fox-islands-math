@@ -1,0 +1,110 @@
+name: CI & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  packages: write
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # --- проверка: синтаксис всех JS и валидность manifest.json ---
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node syntax check
+        run: |
+          set -e
+          for f in $(find js -name '*.js') sw.js; do
+            node --check "$f"
+            echo "ok: $f"
+          done
+          node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('ok: manifest.json')"
+
+  # --- GitHub Pages: https://game.eropulsars.com (после настройки DNS) ---
+  pages:
+    needs: check
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare static bundle
+        run: |
+          mkdir -p /tmp/public
+          rsync -a \
+            --exclude '.git' --exclude '.github' --exclude '.claude' \
+            --exclude 'docs' --exclude '.env*' --exclude 'deploy.sh' \
+            --exclude 'Dockerfile' --exclude 'docker-compose.yml' \
+            --exclude 'nginx.conf' --exclude '.dockerignore' \
+            ./ /tmp/public/
+          echo 'game.eropulsars.com' > /tmp/public/CNAME
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/public
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # --- Docker-образ в GitHub Container Registry ---
+  docker:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Image name (lowercase)
+        id: img
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.img.outputs.name }}:latest
+            ${{ steps.img.outputs.name }}:${{ github.sha }}
+
+  # --- Деплой на собственный сервер (включается секретами DEPLOY_*) ---
+  server:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check deploy secrets
+        id: gate
+        env:
+          H: ${{ secrets.DEPLOY_HOST }}
+          K: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          if [ -n "$H" ] && [ -n "$K" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "go=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Секреты DEPLOY_* не заданы — шаг деплоя на сервер пропущен (см. README)."
+          fi
+      - name: Rsync to server
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+          rsync -avz --delete \
+            --exclude '.git' --exclude '.github' --exclude '.claude' \
+            --exclude 'docs' --exclude '.env*' --exclude 'deploy.sh' \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            ./ "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:${{ secrets.DEPLOY_PATH }}/"

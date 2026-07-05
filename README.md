@@ -58,8 +58,70 @@ FX.CONFIG = { googleClientId: '1234….apps.googleusercontent.com' };
 ```
 
 Пока Client ID не задан, доступен гостевой профиль (вся игра работает полностью).
-Прогресс хранится локально на устройстве; облачной синхронизации нет — для неё
-понадобится бэкенд (например, Firebase), это отдельная доработка.
+
+## ☁️ Облачная синхронизация (Firebase)
+
+Прогресс синхронизируется между устройствами через Firestore: документ
+`progress/{uid}`, при конфликте берётся максимум звёзд по каждому уровню.
+Работает офлайн-дружелюбно: без сети игра сохраняет локально и дольёт в облако
+при следующем запуске/синке. Настройка (≈10 минут):
+
+1. [console.firebase.google.com](https://console.firebase.google.com) →
+   **Add project** → в проекте **Add app → Web (</>)** — получите `firebaseConfig`.
+2. **Authentication → Sign-in method** → включите **Google**.
+3. **Authentication → Settings → Authorized domains** → добавьте
+   `game.eropulsars.com` (localhost там уже есть).
+4. **Firestore Database → Create database** (production mode) → вкладка
+   **Rules** → вставьте содержимое [firebase/firestore.rules](firebase/firestore.rules).
+5. Скопируйте значения `apiKey`, `authDomain`, `projectId`, `appId` в
+   [js/config.js](js/config.js) → `FX.CONFIG.firebase`.
+
+Эти значения публичны по дизайну Firebase — данные защищают правила Firestore.
+Когда Firebase настроен, кнопка «Войти через Google» автоматически использует
+Firebase Auth (popup, на мобильных redirect), а в родительском разделе появляются
+статус синка и кнопка «☁️ Синхронизировать».
+
+## 🐳 Docker
+
+```bash
+docker compose up -d --build      # игра на http://localhost:8080
+GAME_PORT=9000 docker compose up  # свой порт
+```
+
+Или готовый образ из GitHub Container Registry (собирается CI на каждый пуш):
+
+```bash
+docker run -d -p 8080:80 ghcr.io/<owner>/<repo>:latest
+```
+
+Внутри — nginx с gzip и правильными Cache-Control (sw.js и index.html не кэшируются).
+
+## 🚀 CI/CD и домен game.eropulsars.com
+
+Workflow [.github/workflows/deploy.yml](.github/workflows/deploy.yml) на каждый пуш в `main`:
+
+| Job | Что делает |
+|---|---|
+| `check` | `node --check` всех JS + валидация manifest.json |
+| `pages` | Публикует игру на GitHub Pages с `CNAME game.eropulsars.com` |
+| `docker` | Собирает и пушит образ в `ghcr.io/<owner>/<repo>` |
+| `server` | Rsync на ваш сервер — включается, когда заданы Secrets |
+
+**Вариант А (рекомендую): GitHub Pages + ваш домен.** Уже настроено с этой
+стороны; остаётся одна запись у вашего DNS-провайдера:
+
+```
+game.eropulsars.com  CNAME  <owner>.github.io
+```
+
+GitHub сам выпустит HTTPS-сертификат (Settings → Pages → Enforce HTTPS).
+
+**Вариант Б: свой сервер.** Добавьте в репозиторий Secrets
+(`Settings → Secrets and variables → Actions`): `DEPLOY_HOST`, `DEPLOY_USER`,
+`DEPLOY_PATH`, `DEPLOY_SSH_KEY` (приватный ключ целиком) — job `server`
+начнёт выкатывать сам. Локально то же самое делает `./deploy.sh` (настройки
+в `.env`, шаблон — [.env.example](.env.example)). На сервере можно поднять и
+docker-вариант: `docker compose up -d` в папке проекта.
 
 ## Что внутри
 

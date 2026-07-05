@@ -38,11 +38,18 @@
 
   FX.progress = {
     reload: reloadProgress,
+    /* для облачной синхронизации */
+    raw() { return progressData; },
+    replace(data) {
+      progressData = data || {};
+      FX.save(progressKey(), JSON.stringify(progressData));
+    },
     getStars(actId, lv) { return (progressData[actId] && progressData[actId][lv]) || 0; },
     setStars(actId, lv, stars) {
       if (!progressData[actId]) progressData[actId] = {};
       progressData[actId][lv] = Math.max(this.getStars(actId, lv), stars);
       FX.save(progressKey(), JSON.stringify(progressData));
+      if (window.FX.cloud) FX.cloud.queueSave();
     },
     isUnlocked(actId, lv) { return lv === 1 || this.getStars(actId, lv - 1) >= 1; },
     activityStars(actId) { return [1, 2, 3].reduce((s, lv) => s + this.getStars(actId, lv), 0); },
@@ -620,6 +627,7 @@
     acc.appendChild(FX.el('span', null, accText));
     const switchBtn = FX.el('button', 'btn small lilac', 'Сменить профиль');
     switchBtn.addEventListener('click', () => {
+      if (window.FX.cloud) FX.cloud.signOut();
       FX.auth.signOut();
       FX.progress.reload();
       overlay.remove();
@@ -627,6 +635,29 @@
     });
     acc.appendChild(switchBtn);
     card.appendChild(acc);
+
+    /* состояние облачной синхронизации */
+    if (FX.cloud.enabled() && p && p.provider === 'google') {
+      const cloudRow = FX.el('div', 'account-row');
+      const status = FX.el('span', null, FX.cloud.lastSync
+        ? '☁️ Синхронизировано: ' + FX.cloud.lastSync.toLocaleTimeString('ru-RU')
+        : '☁️ Облако подключено, ждёт первой синхронизации');
+      cloudRow.appendChild(status);
+      const syncBtn = FX.el('button', 'btn small', '☁️ Синхронизировать');
+      syncBtn.addEventListener('click', async () => {
+        syncBtn.disabled = true;
+        const ok = await FX.cloud.syncNow();
+        status.textContent = ok
+          ? '☁️ Синхронизировано: ' + FX.cloud.lastSync.toLocaleTimeString('ru-RU')
+          : '⚠️ Не удалось (нет сети?)';
+        syncBtn.disabled = false;
+      });
+      cloudRow.appendChild(syncBtn);
+      card.appendChild(cloudRow);
+    } else if (!FX.cloud.enabled()) {
+      card.appendChild(FX.el('p', null,
+        'Облачная синхронизация между устройствами выключена: заполните FX.CONFIG.firebase в js/config.js (см. README).'));
+    }
 
     const actions = FX.el('div', 'parents-actions');
     const reset = FX.el('button', 'btn small danger', 'Сбросить прогресс');
@@ -662,6 +693,20 @@
   /* ---------- запуск ----------
      Сессия устройства: если профиль уже выбирали на этом устройстве,
      экран входа не показывается. */
+
+  /* облако: после redirect-входа или восстановления сессии Firebase
+     уходим с экрана входа; после слияния прогресса обновляем счётчики */
+  FX.cloud.onAuthRestored = () => {
+    if (screens.login.classList.contains('active')) {
+      FX.progress.reload();
+      showHome();
+    }
+  };
+  FX.cloud.onSynced = () => {
+    if (screens.home.classList.contains('active')) showHome();
+    else if (screens.map.classList.contains('active')) showMap();
+  };
+  FX.cloud.init();
 
   if (FX.auth.current) showHome();
   else showLogin();

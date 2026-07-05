@@ -4,7 +4,7 @@
    Стратегия stale-while-revalidate: отдаём из кэша мгновенно,
    в фоне обновляем. Навигация без сети падает на index.html. */
 
-const VERSION = 'fox-islands-v2';
+const VERSION = 'fox-islands-v3';
 
 const ASSETS = [
   './',
@@ -15,6 +15,7 @@ const ASSETS = [
   './js/audio.js',
   './js/config.js',
   './js/auth.js',
+  './js/cloud.js',
   './js/pwa.js',
   './js/data.js',
   './js/engine.js',

@@ -63,8 +63,30 @@ FX.auth = {
   },
 
   /* Отрисовать кнопку Google в контейнер.
-     handlers: { onSignIn(), onError(code) } */
+     handlers: { onSignIn(), onError(code) }
+     Если настроен Firebase — входим через него (даёт облачную
+     синхронизацию). Иначе — Google Identity Services (только профиль). */
   renderGoogleButton(container, handlers) {
+    if (window.FX.cloud && FX.cloud.enabled()) {
+      const btn = FX.el('button', 'btn google', '<span class="gmark">G</span> Войти через Google');
+      btn.addEventListener('click', () => {
+        btn.disabled = true;
+        FX.cloud.signInWithGoogle()
+          .then(() => handlers.onSignIn())
+          .catch(e => {
+            btn.disabled = false;
+            const code = e && e.code;
+            handlers.onError(
+              code === 'auth/network-request-failed' || (e && e.message === 'cloud_unavailable')
+                ? 'load_failed'
+                : code === 'auth/popup-closed-by-user' ? 'cancelled' : 'init_failed'
+            );
+          });
+      });
+      container.appendChild(btn);
+      return;
+    }
+
     const cid = (FX.CONFIG && FX.CONFIG.googleClientId || '').trim();
     if (!cid) { handlers.onError('not_configured'); return; }
 
