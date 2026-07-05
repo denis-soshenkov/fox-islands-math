@@ -18,22 +18,37 @@
 
   /* ================= прогресс ================= */
 
-  const PKEY = 'fox_islands_progress_v1';
+  /* прогресс хранится отдельно для каждого профиля (гость / Google-аккаунт) */
+  const progressKey = () => 'fox_islands_progress_v1:' + FX.auth.profileId();
+
+  /* миграция: старый общий прогресс переезжает в гостевой профиль */
+  try {
+    const legacy = FX.load('fox_islands_progress_v1', null);
+    if (legacy && !FX.load('fox_islands_progress_v1:guest:local', null)) {
+      FX.save('fox_islands_progress_v1:guest:local', legacy);
+    }
+  } catch (e) {}
+
   let progressData = {};
-  try { progressData = JSON.parse(FX.load(PKEY, '{}')) || {}; } catch (e) { progressData = {}; }
+  function reloadProgress() {
+    try { progressData = JSON.parse(FX.load(progressKey(), '{}')) || {}; }
+    catch (e) { progressData = {}; }
+  }
+  reloadProgress();
 
   FX.progress = {
+    reload: reloadProgress,
     getStars(actId, lv) { return (progressData[actId] && progressData[actId][lv]) || 0; },
     setStars(actId, lv, stars) {
       if (!progressData[actId]) progressData[actId] = {};
       progressData[actId][lv] = Math.max(this.getStars(actId, lv), stars);
-      FX.save(PKEY, JSON.stringify(progressData));
+      FX.save(progressKey(), JSON.stringify(progressData));
     },
     isUnlocked(actId, lv) { return lv === 1 || this.getStars(actId, lv - 1) >= 1; },
     activityStars(actId) { return [1, 2, 3].reduce((s, lv) => s + this.getStars(actId, lv), 0); },
     islandStars(isl) { return isl.acts.reduce((s, a) => s + this.activityStars(a), 0); },
     totalStars() { return FX.ISLANDS.reduce((s, i) => s + this.islandStars(i), 0); },
-    reset() { progressData = {}; FX.save(PKEY, '{}'); }
+    reset() { progressData = {}; FX.save(progressKey(), '{}'); }
   };
 
   /* ================= конфетти ================= */
@@ -62,7 +77,7 @@
   /* ================= экраны ================= */
 
   const screens = {};
-  ['home', 'map', 'island', 'game'].forEach(id => {
+  ['login', 'home', 'map', 'island', 'game'].forEach(id => {
     const s = FX.el('section', 'screen');
     s.id = 'screen-' + id;
     $app.appendChild(s);
@@ -85,6 +100,71 @@
       if (!FX.audio.muted) FX.audio.play('click');
     });
     return b;
+  }
+
+  /* ---------- экран входа (показывается один раз на устройство) ---------- */
+
+  function showLogin() {
+    navToken++;
+    FX.stopSpeech();
+    const s = screens.login;
+    s.innerHTML = '';
+
+    const clouds = FX.el('div', 'home-clouds');
+    for (let i = 0; i < 4; i++) {
+      const c = FX.el('span', 'cloud', '☁️');
+      c.style.top = FX.rand(4, 70) + '%';
+      c.style.fontSize = FX.rand(34, 64) + 'px';
+      c.style.animationDuration = FX.rand(26, 60) + 's';
+      c.style.animationDelay = -FX.rand(0, 40) + 's';
+      clouds.appendChild(c);
+    }
+    s.appendChild(clouds);
+
+    s.appendChild(FX.el('div', 'home-fox', '🦊'));
+    s.appendChild(FX.el('h1', 'home-title', 'Лисьи острова'));
+    s.appendChild(FX.el('div', 'home-sub', 'Кто будет играть?'));
+
+    const card = FX.el('div', 'login-card');
+    const gwrap = FX.el('div', 'g-btn-wrap');
+    const note = FX.el('div', 'login-note');
+    card.appendChild(gwrap);
+    card.appendChild(note);
+    card.appendChild(FX.el('div', 'login-divider', 'или'));
+
+    const guest = FX.el('button', 'btn sun', '🙂 Играть без входа');
+    guest.addEventListener('click', () => {
+      FX.audio.init();
+      FX.auth.signInGuest();
+      FX.progress.reload();
+      FX.audio.play('complete');
+      showHome();
+    });
+    card.appendChild(guest);
+
+    card.appendChild(FX.el('p', 'login-hint',
+      'Вход через Google даст профилю имя и аватар, а прогресс будет вестись отдельно ' +
+      'для каждого игрока. Выбор запоминается на этом устройстве — входить каждый раз не нужно.'));
+    s.appendChild(card);
+
+    FX.auth.renderGoogleButton(gwrap, {
+      onSignIn: () => {
+        FX.audio.init();
+        FX.progress.reload();
+        showHome();
+      },
+      onError: code => {
+        const msgs = {
+          not_configured: 'Google-вход не настроен: добавьте Client ID в js/config.js (инструкция в README).',
+          load_failed: 'Не удалось связаться с Google — нет интернета? Играй пока как гость.',
+          init_failed: 'Google-вход не запустился. Играй как гость.',
+          bad_token: 'Не получилось войти. Попробуй ещё раз или играй как гость.'
+        };
+        note.textContent = msgs[code] || 'Google-вход недоступен.';
+      }
+    });
+
+    switchScreen('login');
   }
 
   /* ---------- домашний экран ---------- */
@@ -122,6 +202,37 @@
     const ts = FX.progress.totalStars();
     if (ts > 0) s.appendChild(FX.el('div', 'home-stars', '⭐ Собрано звёзд: ' + ts));
     s.appendChild(FX.el('div', 'home-age', 'для детей 3–7 лет · работает без интернета'));
+
+    /* чип профиля (кто играет на этом устройстве) */
+    const p = FX.auth.current;
+    const chip = FX.el('div', 'profile-chip');
+    if (p && p.avatar) {
+      const img = document.createElement('img');
+      img.src = p.avatar;
+      img.alt = '';
+      img.referrerPolicy = 'no-referrer';
+      chip.appendChild(img);
+    } else {
+      chip.appendChild(FX.el('span', 'pc-emoji', '🙂'));
+    }
+    chip.appendChild(FX.el('span', 'pc-name', p ? p.name : 'Гость'));
+    s.appendChild(chip);
+
+    /* установка на телефон */
+    if (!FX.pwa.isStandalone()) {
+      if (FX.pwa.deferred) {
+        const inst = FX.el('button', 'btn grass small', '📲 Установить на телефон');
+        inst.addEventListener('click', () => { FX.audio.play('click'); FX.pwa.install(); });
+        s.appendChild(inst);
+      } else if (FX.pwa.isIos()) {
+        s.appendChild(FX.el('div', 'install-hint',
+          '📲 Установить: «Поделиться» → «На экран “Домой”»'));
+      }
+    }
+    FX.pwa.onAvailable = () => {
+      if (screens.home.classList.contains('active')) showHome();
+    };
+
     switchScreen('home');
   }
 
@@ -489,6 +600,34 @@
     card.appendChild(table);
     card.appendChild(FX.el('p', null, 'Всего звёзд: ' + FX.progress.totalStars() + ' из 108.'));
 
+    /* текущий профиль устройства */
+    const p = FX.auth.current;
+    const acc = FX.el('div', 'account-row');
+    if (p && p.avatar) {
+      const img = document.createElement('img');
+      img.src = p.avatar;
+      img.alt = '';
+      img.referrerPolicy = 'no-referrer';
+      acc.appendChild(img);
+    } else {
+      acc.appendChild(FX.el('span', null, '🙂'));
+    }
+    const accText = p
+      ? (p.provider === 'google'
+          ? '<b>' + (p.fullName || p.name) + '</b> · вход через Google' + (p.email ? ' (' + p.email + ')' : '')
+          : '<b>Гость</b> · без входа')
+      : 'Профиль не выбран';
+    acc.appendChild(FX.el('span', null, accText));
+    const switchBtn = FX.el('button', 'btn small lilac', 'Сменить профиль');
+    switchBtn.addEventListener('click', () => {
+      FX.auth.signOut();
+      FX.progress.reload();
+      overlay.remove();
+      showLogin();
+    });
+    acc.appendChild(switchBtn);
+    card.appendChild(acc);
+
     const actions = FX.el('div', 'parents-actions');
     const reset = FX.el('button', 'btn small danger', 'Сбросить прогресс');
     let armed = false, disarmT = null;
@@ -520,7 +659,10 @@
     screens.map.appendChild(overlay);
   }
 
-  /* ---------- запуск ---------- */
+  /* ---------- запуск ----------
+     Сессия устройства: если профиль уже выбирали на этом устройстве,
+     экран входа не показывается. */
 
-  showHome();
+  if (FX.auth.current) showHome();
+  else showLogin();
 })();

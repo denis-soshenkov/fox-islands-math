@@ -1038,6 +1038,109 @@ button { font-family: inherit; color: inherit; }
 }
 
 /* ============================================================
+   Вход и профиль
+   ============================================================ */
+
+#screen-login { align-items: center; justify-content: center; gap: 8px; overflow: hidden; }
+
+.login-card {
+  background: var(--paper);
+  border-radius: 26px;
+  box-shadow: var(--shadow-card);
+  padding: 20px 22px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(400px, 94%);
+  z-index: 1;
+}
+.g-btn-wrap { min-height: 0; display: flex; justify-content: center; width: 100%; }
+.g-btn-wrap:not(:empty) { min-height: 44px; }
+.login-note { font-size: 13px; color: var(--ink-soft); text-align: center; }
+.login-note:empty { display: none; }
+.login-divider {
+  color: var(--ink-soft);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+.login-divider::before, .login-divider::after {
+  content: "";
+  flex: 1;
+  height: 2px;
+  background: #EEF1F8;
+  border-radius: 2px;
+}
+.login-hint { font-size: 12px; color: var(--ink-soft); text-align: center; line-height: 1.45; }
+
+.profile-chip {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top));
+  right: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffffd9;
+  border-radius: 999px;
+  padding: 6px 14px 6px 8px;
+  box-shadow: 0 3px 8px rgba(53, 64, 90, .18);
+  z-index: 2;
+  font-weight: 800;
+  font-size: 14px;
+  max-width: 46vw;
+}
+.profile-chip img { width: 30px; height: 30px; border-radius: 50%; }
+.profile-chip .pc-emoji { font-size: 22px; line-height: 1; }
+.profile-chip .pc-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.install-hint {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  background: #ffffffcc;
+  border-radius: 999px;
+  padding: 6px 14px;
+  z-index: 1;
+  text-align: center;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cream);
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+.account-row img { width: 34px; height: 34px; border-radius: 50%; }
+.account-row > span:not(.pc-emoji) { flex: 1; min-width: 140px; }
+
+/* ============================================================
+   Mobile-first: PWA и телефоны
+   ============================================================ */
+
+html, body { overscroll-behavior: none; }
+body { -webkit-touch-callout: none; }
+
+/* стабильная высота на мобильных (адресная строка браузера) */
+@supports (height: 100dvh) {
+  html, body { height: 100dvh; }
+}
+
+@media (max-width: 480px) {
+  .btn-icon { width: 46px; height: 46px; min-width: 46px; font-size: 22px; }
+  .topbar .title { font-size: 16px; }
+  .star-chip { font-size: 15px; padding: 7px 11px; }
+  .screen { padding-left: 10px; padding-right: 10px; }
+  .stage { border-radius: 20px; }
+  .profile-chip { font-size: 13px; }
+}
+
+/* ============================================================
    Адаптив
    ============================================================ */
 
