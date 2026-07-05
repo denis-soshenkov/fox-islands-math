@@ -21,4 +21,8 @@ rsync -avz --delete \
   --exclude '.DS_Store' \
   -e "ssh -i ${KEY/#\~/$HOME}" \
   ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
+
+echo "→ Перезапуск контейнеров (game + caddy)"
+ssh -i "${KEY/#\~/$HOME}" "$DEPLOY_USER@$DEPLOY_HOST" \
+  "cd '$DEPLOY_PATH' && docker compose -f deploy/docker-compose.prod.yml up -d --build && docker image prune -f >/dev/null"
 echo "✓ Готово: https://$DEPLOY_HOST"

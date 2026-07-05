@@ -1,0 +1,27 @@
+# Прод-стек на VPS: игра в контейнере + Caddy с автоматическим HTTPS.
+# Запуск на сервере: docker compose -f deploy/docker-compose.prod.yml up -d --build
+services:
+  game:
+    build:
+      context: ..
+    image: fox-islands-math:prod
+    container_name: fox-islands-game
+    restart: unless-stopped
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: fox-islands-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:

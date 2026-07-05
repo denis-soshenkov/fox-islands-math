@@ -13,7 +13,7 @@ FX.CONFIG = {
   /* «Войти через Google» БЕЗ облака (если Firebase не настроен).
      Google Cloud Console → Credentials → OAuth client ID (Web) →
      Authorized JavaScript origins: http://localhost:8899, https://game.eropulsars.com */
-  googleClientId: '',
+  googleClientId: '720868305351-g8hhkcq0hd8prhgk2h88aenl3h08iop3.apps.googleusercontent.com',
 
   /* Облачная синхронизация прогресса.
      Firebase Console (https://console.firebase.google.com):
@@ -25,9 +25,9 @@ FX.CONFIG = {
           вставьте содержимое firebase/firestore.rules.
      Пока поля пустые — облако выключено, игра работает локально. */
   firebase: {
-    apiKey: '',
-    authDomain: '',
-    projectId: '',
-    appId: ''
+    apiKey: 'AIzaSyBGsTCHVD67pMndLVGphn5CyriXrQrIdeA',
+    authDomain: 'alice-a4d13.firebaseapp.com',
+    projectId: 'alice-a4d13',
+    appId: '1:163852944022:web:33258ee00155b2f56ff8b7'
   }
 };
