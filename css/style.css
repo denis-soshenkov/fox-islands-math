@@ -264,8 +264,8 @@ button { font-family: inherit; color: inherit; }
 .island:active .island-bubble { transform: scale(.92); }
 
 .island-bubble {
-  width: clamp(74px, 12vw, 108px);
-  height: clamp(74px, 12vw, 108px);
+  width: clamp(60px, 10.5vw, 96px);
+  height: clamp(60px, 10.5vw, 96px);
   border-radius: 46% 54% 52% 48% / 52% 46% 54% 48%;
   display: flex;
   align-items: center;
@@ -339,25 +339,25 @@ button { font-family: inherit; color: inherit; }
 .activity-name { font-size: 24px; font-weight: 800; }
 .activity-skill { font-size: 14px; color: var(--ink-soft); margin-top: -6px; }
 
-.level-row { display: flex; gap: 12px; margin-top: 4px; }
+.level-row { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; justify-content: center; }
 .level-btn {
   border: none;
   cursor: pointer;
-  width: 92px;
-  border-radius: var(--r-md);
+  width: 60px;
+  border-radius: 16px;
   background: var(--cream);
   box-shadow: 0 5px 0 #e3d5b3;
-  padding: 10px 6px 8px;
+  padding: 8px 4px 7px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   font-family: inherit;
   transition: transform .08s;
 }
 .level-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #e3d5b3; }
-.level-btn .lv { font-size: 19px; font-weight: 800; color: var(--ink); }
-.level-btn .st { font-size: 14px; letter-spacing: 1px; }
+.level-btn .lv { font-size: 15px; font-weight: 800; color: var(--ink); }
+.level-btn .st { font-size: 10.5px; letter-spacing: 0; }
 .level-btn.locked { filter: grayscale(1) opacity(.55); }
 .level-btn.locked .lv { color: var(--ink-soft); }
 
@@ -515,7 +515,7 @@ button { font-family: inherit; color: inherit; }
 .float-item {
   position: absolute;
   transform: translate(-50%, -50%);
-  font-size: clamp(30px, 5.5vw, 46px);
+  font-size: clamp(38px, 9vw, 68px); /* переопределяется из игры по количеству */
   cursor: pointer;
   animation: itemWobble 2.6s ease-in-out infinite;
   line-height: 1;
@@ -526,18 +526,18 @@ button { font-family: inherit; color: inherit; }
 }
 .count-badge {
   position: absolute;
-  top: -10px; right: -12px;
+  top: -0.28em; right: -0.34em;
   background: var(--coral);
   color: #fff;
   border-radius: 50%;
-  min-width: 24px; height: 24px;
-  font-size: 15px;
+  min-width: 1.55em; height: 1.55em;
+  font-size: max(14px, 0.3em); /* масштабируется вместе с предметом */
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow: 0 2px 4px rgba(0,0,0,.25);
-  padding: 0 4px;
+  padding: 0 0.2em;
 }
 
 /* --- цифры: тарелки --- */
@@ -644,7 +644,8 @@ button { font-family: inherit; color: inherit; }
 .basket .b-icon { font-size: clamp(36px, 7vw, 54px); line-height: 1.1; }
 .basket .b-label { font-size: clamp(15px, 2.6vw, 20px); font-weight: 800; }
 .basket .b-got { min-height: 30px; font-size: 20px; letter-spacing: 2px; }
-.basket.bounce { animation: basketBounce .4s ease; }
+.bounce { animation: basketBounce .4s ease; }
+.basket-row.three .basket { width: 31%; min-width: 96px; }
 @keyframes basketBounce {
   0%,100% { transform: scale(1); }
   50%     { transform: scale(1.08); }
@@ -739,7 +740,7 @@ button { font-family: inherit; color: inherit; }
   max-width: 100%;
 }
 .pat-tile {
-  font-size: clamp(28px, 5.5vw, 44px);
+  font-size: clamp(32px, 6.5vw, 48px);
   line-height: 1.2;
 }
 .pat-slot {
@@ -836,10 +837,10 @@ button { font-family: inherit; color: inherit; }
   gap: 5px;
   justify-content: center;
   align-content: center;
-  max-width: 250px;
+  max-width: 300px;
   min-width: 86px;
-  min-height: 76px;
-  font-size: clamp(24px, 4.5vw, 36px);
+  min-height: 80px;
+  font-size: clamp(28px, 6vw, 44px);
 }
 .eq-group.mystery {
   border: 3px dashed var(--coral);
@@ -1035,6 +1036,192 @@ button { font-family: inherit; color: inherit; }
 @keyframes confettiFly {
   from { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; }
   to   { transform: translate(var(--cx), var(--cy)) rotate(var(--cr)) scale(.4); opacity: 0; }
+}
+
+/* ============================================================
+   Перетаскивание и новые игры
+   ============================================================ */
+
+.draggable { touch-action: none; cursor: grab; }
+.dragging { z-index: 80; position: relative; }
+.drag-return { transition: transform .3s cubic-bezier(.2, 1.2, .4, 1); }
+
+/* что лишнее */
+.odd-row .num-btn.huge {
+  width: clamp(84px, 21vw, 130px);
+  height: clamp(84px, 21vw, 130px);
+  font-size: clamp(46px, 12vw, 76px);
+  border-radius: 30px;
+}
+
+/* найди тень */
+.shadow-target {
+  font-size: clamp(64px, 17vw, 110px);
+  line-height: 1.1;
+  filter: drop-shadow(0 8px 10px rgba(53, 64, 90, .25));
+}
+.shadow-row { display: flex; gap: clamp(10px, 2.5vw, 20px); flex-wrap: wrap; justify-content: center; }
+.shadow-card {
+  width: clamp(84px, 20vw, 130px);
+  height: clamp(84px, 20vw, 130px);
+  background: var(--paper);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 5px 0 #d8dcea;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shadow-sil {
+  font-size: clamp(48px, 12vw, 80px);
+  line-height: 1.1;
+  filter: brightness(0);
+  opacity: .72;
+  transition: filter .3s, opacity .3s;
+}
+.shadow-card.sfound {
+  background: #E8F9EC;
+  box-shadow: 0 5px 0 var(--grass-d), inset 0 0 0 4px var(--grass);
+}
+
+/* накорми зверят */
+.feed-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  padding: 12px 22px 10px;
+  max-width: 94%;
+}
+.feed-animal { font-size: clamp(64px, 16vw, 104px); line-height: 1.1; }
+.feed-plate {
+  min-height: 46px;
+  min-width: min(300px, 72vw);
+  max-width: 100%;
+  border: 3px dashed #c9d2e3;
+  border-radius: 16px;
+  background: #F7FAFF;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  font-size: clamp(22px, 5vw, 34px);
+}
+.feed-count { font-weight: 800; color: var(--ink-soft); font-size: 15px; }
+.feed-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(8px, 2vw, 16px);
+  justify-content: center;
+  max-width: 660px;
+}
+.feed-item { line-height: 1.1; }
+
+/* заплатки */
+.puzzle-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(10px, 2.5vw, 20px);
+  justify-content: center;
+  background: var(--cream);
+  padding: clamp(10px, 2.5vw, 18px);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  max-width: 96%;
+}
+.hole {
+  width: clamp(72px, 18vw, 112px);
+  aspect-ratio: 1;
+  background: #fff;
+  border: 3px dashed #c9d2e3;
+  border-radius: 18px;
+  padding: 8%;
+}
+.hole svg { width: 100%; height: 100%; }
+.hole.filled { border-style: solid; border-color: var(--grass); background: #F3FCF5; }
+.puzzle-tray { display: flex; flex-wrap: wrap; gap: clamp(10px, 2.5vw, 20px); justify-content: center; }
+.piece { width: clamp(64px, 16vw, 100px); aspect-ratio: 1; padding: 4%; }
+.piece svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 5px rgba(53, 64, 90, .25)); }
+
+/* по росту */
+.slot-row {
+  display: flex;
+  align-items: flex-end;
+  gap: clamp(8px, 2vw, 16px);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.size-slot {
+  border: 3px dashed #c9d2e3;
+  border-radius: 16px;
+  background: #ffffffcc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.size-slot.filled { border-style: solid; border-color: var(--grass); background: #F3FCF5; }
+.size-tray {
+  display: flex;
+  align-items: center;
+  gap: clamp(10px, 3vw, 24px);
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 60px;
+}
+.size-piece { line-height: 1; }
+
+/* по домикам */
+.house-row { display: flex; gap: clamp(12px, 3vw, 28px); justify-content: center; width: 100%; }
+.house {
+  position: relative;
+  width: min(240px, 42%);
+  background: var(--cream);
+  border-radius: 18px;
+  padding: 8px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  box-shadow: 0 6px 0 #e3d5b3;
+}
+.house-row.three .house { width: 31%; min-width: 96px; }
+.h-roof { font-size: clamp(30px, 6vw, 44px); line-height: 1; }
+.h-icon { font-size: clamp(24px, 5vw, 36px); line-height: 1.1; }
+.house .b-got { min-height: 26px; font-size: 17px; }
+.house-item-zone {
+  min-height: clamp(64px, 14vw, 100px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.house-item { font-size: clamp(56px, 13vw, 92px); line-height: 1.1; }
+
+/* три карточки в сравнении */
+.halves.three .half {
+  width: min(240px, 31%);
+  min-height: clamp(130px, 24vh, 220px);
+  padding: 12px 8px 24px;
+}
+
+/* плотная сетка памяти (8 пар) */
+.mem-grid.dense .mem-card { width: clamp(58px, 12vw, 96px); height: clamp(74px, 15vw, 118px); }
+
+/* горизонтальное зеркало */
+.sym-mirror-line.h {
+  top: 50%;
+  left: 6px;
+  right: 6px;
+  bottom: auto;
+  width: auto;
+  height: 0;
+  border-left: none;
+  border-top: 4px dashed var(--coral);
 }
 
 /* ============================================================

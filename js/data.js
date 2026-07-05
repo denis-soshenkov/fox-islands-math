@@ -5,12 +5,15 @@
    ============================================================ */
 
 FX.ISLANDS = [
-  { id: 'count',    name: 'Остров Счёта',       emoji: '🏝️', color: '#FFD93D', x: 17, y: 26, acts: ['counting', 'digits'],      blurb: 'Учимся считать предметы и узнавать цифры' },
-  { id: 'compare',  name: 'Остров Сравнений',   emoji: '🐳', color: '#4ECDC4', x: 50, y: 15, acts: ['compare', 'sorting'],      blurb: 'Сравниваем количества и раскладываем по группам' },
-  { id: 'shapes',   name: 'Остров Фигур',       emoji: '🏰', color: '#B39DDB', x: 83, y: 27, acts: ['shapes', 'symmetry'],      blurb: 'Геометрические фигуры и симметрия' },
-  { id: 'patterns', name: 'Остров Узоров',      emoji: '🌸', color: '#FF8FAB', x: 21, y: 73, acts: ['patterns', 'memory'],      blurb: 'Закономерности, последовательности и память' },
-  { id: 'math',     name: 'Остров Арифметики',  emoji: '🎈', color: '#FF6B6B', x: 52, y: 83, acts: ['addition', 'subtraction'], blurb: 'Наглядное сложение и вычитание до 10' },
-  { id: 'quest',    name: 'Остров Приключений', emoji: '🚀', color: '#4D96FF', x: 82, y: 70, acts: ['dots', 'missing'],         blurb: 'Числовой ряд и порядок чисел' }
+  { id: 'count',    name: 'Остров Счёта',       emoji: '🏝️', color: '#FFD93D', x: 18, y: 15, acts: ['counting', 'digits'],      blurb: 'Учимся считать предметы и узнавать цифры' },
+  { id: 'compare',  name: 'Остров Сравнений',   emoji: '🐳', color: '#4ECDC4', x: 50, y: 10, acts: ['compare', 'sorting'],      blurb: 'Сравниваем количества и раскладываем по группам' },
+  { id: 'shapes',   name: 'Остров Фигур',       emoji: '🏰', color: '#B39DDB', x: 82, y: 15, acts: ['shapes', 'symmetry'],      blurb: 'Геометрические фигуры и симметрия' },
+  { id: 'logic',    name: 'Остров Загадок',     emoji: '🦉', color: '#CE93D8', x: 82, y: 46, acts: ['odd_one', 'shadow'],       blurb: 'Логика: что лишнее и чья это тень' },
+  { id: 'hands',    name: 'Остров Ловкости',    emoji: '🤹', color: '#FFB74D', x: 50, y: 41, acts: ['feed', 'puzzle'],          blurb: 'Перетаскивай: накорми зверят и почини заплатки' },
+  { id: 'patterns', name: 'Остров Узоров',      emoji: '🌸', color: '#FF8FAB', x: 18, y: 46, acts: ['patterns', 'memory'],      blurb: 'Закономерности, последовательности и память' },
+  { id: 'math',     name: 'Остров Арифметики',  emoji: '🎈', color: '#FF6B6B', x: 18, y: 79, acts: ['addition', 'subtraction'], blurb: 'Наглядное сложение и вычитание' },
+  { id: 'sizes',    name: 'Остров Великанов',   emoji: '🌳', color: '#81C784', x: 50, y: 85, acts: ['size_order', 'houses'],    blurb: 'Большое и маленькое: по росту и по домикам' },
+  { id: 'quest',    name: 'Остров Приключений', emoji: '🚀', color: '#4D96FF', x: 82, y: 79, acts: ['dots', 'missing'],         blurb: 'Числовой ряд и порядок чисел' }
 ];
 
 /* Предметы для счёта: emoji + родительный падеж мн. числа («Сколько …?») */

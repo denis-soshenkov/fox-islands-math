@@ -52,7 +52,11 @@
       if (window.FX.cloud) FX.cloud.queueSave();
     },
     isUnlocked(actId, lv) { return lv === 1 || this.getStars(actId, lv - 1) >= 1; },
-    activityStars(actId) { return [1, 2, 3].reduce((s, lv) => s + this.getStars(actId, lv), 0); },
+    activityStars(actId) {
+      let s = 0;
+      for (let lv = 1; lv <= FX.MAX_LEVEL; lv++) s += this.getStars(actId, lv);
+      return s;
+    },
     islandStars(isl) { return isl.acts.reduce((s, a) => s + this.activityStars(a), 0); },
     totalStars() { return FX.ISLANDS.reduce((s, i) => s + this.islandStars(i), 0); },
     reset() { progressData = {}; FX.save(progressKey(), '{}'); }
@@ -290,7 +294,8 @@
       bub.style.background = 'linear-gradient(160deg, #ffffff 0%, ' + isl.color + ' 85%)';
       b.appendChild(bub);
       b.appendChild(FX.el('div', 'island-name', isl.name));
-      b.appendChild(FX.el('div', 'island-stars', '⭐ ' + FX.progress.islandStars(isl) + '/18'));
+      b.appendChild(FX.el('div', 'island-stars',
+        '⭐ ' + FX.progress.islandStars(isl) + '/' + (isl.acts.length * FX.MAX_LEVEL * 3)));
       b.addEventListener('click', () => { FX.audio.play('pop'); showIsland(isl.id); });
       sea.appendChild(b);
     });
@@ -328,11 +333,11 @@
       card.appendChild(FX.el('div', 'activity-skill', g.skill));
 
       const row = FX.el('div', 'level-row');
-      for (let lv = 1; lv <= 3; lv++) {
+      for (let lv = 1; lv <= FX.MAX_LEVEL; lv++) {
         const unlocked = FX.progress.isUnlocked(actId, lv);
         const stars = FX.progress.getStars(actId, lv);
         const btn = FX.el('button', 'level-btn' + (unlocked ? '' : ' locked'));
-        btn.appendChild(FX.el('span', 'lv', unlocked ? 'Ур. ' + lv : '🔒'));
+        btn.appendChild(FX.el('span', 'lv', unlocked ? 'Ур.' + lv : '🔒'));
         const st = FX.el('span', 'st');
         st.innerHTML = '<span style="color:#FFB703">' + '★'.repeat(stars) + '</span>' +
                        '<span style="opacity:.22">' + '★'.repeat(3 - stars) + '</span>';
@@ -498,9 +503,9 @@
   function showResults() {
     const sess = session;
     const stars = sess.mistakes === 0 ? 3 : sess.mistakes <= 2 ? 2 : 1;
-    const hadNext = sess.level < 3 && FX.progress.isUnlocked(sess.actId, sess.level + 1);
+    const hadNext = sess.level < FX.MAX_LEVEL && FX.progress.isUnlocked(sess.actId, sess.level + 1);
     FX.progress.setStars(sess.actId, sess.level, stars);
-    const hasNextNow = sess.level < 3 && FX.progress.isUnlocked(sess.actId, sess.level + 1);
+    const hasNextNow = sess.level < FX.MAX_LEVEL && FX.progress.isUnlocked(sess.actId, sess.level + 1);
     const newlyUnlocked = !hadNext && hasNextNow;
 
     const overlay = FX.el('div', 'results-overlay');
@@ -527,7 +532,7 @@
     const again = FX.el('button', 'btn sun', '🔁 Ещё раз');
     again.addEventListener('click', () => { FX.audio.play('click'); startGame(sess.actId, sess.level); });
     btns.appendChild(again);
-    if (hasNextNow && sess.level < 3) {
+    if (hasNextNow && sess.level < FX.MAX_LEVEL) {
       const nxt = FX.el('button', 'btn grass', 'Уровень ' + (sess.level + 1) + ' ▶');
       nxt.addEventListener('click', () => { FX.audio.play('click'); startGame(sess.actId, sess.level + 1); });
       btns.appendChild(nxt);
@@ -584,20 +589,23 @@
     const card = FX.el('div', 'parents-card');
     card.appendChild(FX.el('h2', null, '👨‍👩‍👧 Для родителей'));
     card.appendChild(FX.el('p', null,
-      'Игра развивает ранние математические навыки: счёт, узнавание цифр, сравнение, ' +
-      'геометрию, симметрию, закономерности, память и наглядную арифметику до 10. ' +
-      'В каждой игре три уровня — следующий открывается после прохождения предыдущего. ' +
+      'Игра развивает ранние математические навыки и логику: счёт, цифры, сравнение, ' +
+      'геометрию, симметрию, закономерности, память, наглядную арифметику, сериацию ' +
+      'по размеру и классификацию, а также моторику (перетаскивание). ' +
+      'В каждой игре пять уровней — следующий открывается после прохождения предыдущего. ' +
       'Звёзды за сессию: без ошибок — 3, одна-две ошибки — 2, больше — 1. ' +
-      'Прогресс хранится в этом браузере.'));
+      'Прогресс хранится в этом браузере (и в облаке, если включён вход через Google).'));
 
     const table = FX.el('table', 'progress-table');
-    table.innerHTML = '<tr><th>Игра</th><th>Ур. 1</th><th>Ур. 2</th><th>Ур. 3</th></tr>';
+    let head = '<tr><th>Игра</th>';
+    for (let lv = 1; lv <= FX.MAX_LEVEL; lv++) head += '<th>Ур. ' + lv + '</th>';
+    table.innerHTML = head + '</tr>';
     FX.ISLANDS.forEach(isl => isl.acts.forEach(actId => {
       const g = FX.games[actId];
       if (!g) return;
       const tr = FX.el('tr');
       const cells = [g.icon + ' ' + g.name];
-      for (let lv = 1; lv <= 3; lv++) {
+      for (let lv = 1; lv <= FX.MAX_LEVEL; lv++) {
         const st = FX.progress.getStars(actId, lv);
         cells.push(st ? '⭐'.repeat(st) : (FX.progress.isUnlocked(actId, lv) ? '—' : '🔒'));
       }
@@ -605,7 +613,8 @@
       table.appendChild(tr);
     }));
     card.appendChild(table);
-    card.appendChild(FX.el('p', null, 'Всего звёзд: ' + FX.progress.totalStars() + ' из 108.'));
+    const maxStars = FX.ISLANDS.reduce((s, i) => s + i.acts.length, 0) * FX.MAX_LEVEL * 3;
+    card.appendChild(FX.el('p', null, 'Всего звёзд: ' + FX.progress.totalStars() + ' из ' + maxStars + '.'));
 
     /* текущий профиль устройства */
     const p = FX.auth.current;

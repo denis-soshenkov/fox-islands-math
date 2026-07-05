@@ -10,6 +10,18 @@ window.FX = {
   }
 };
 
+/* Уровней в каждой активности */
+FX.MAX_LEVEL = 5;
+
+/* Размер предметов на игровом поле: чем меньше предметов,
+   тем крупнее они рисуются (важно для телефона) */
+FX.itemSize = total =>
+  total <= 4 ? 'clamp(58px, 16vw, 108px)' :
+  total <= 6 ? 'clamp(50px, 13vw, 92px)' :
+  total <= 9 ? 'clamp(44px, 10.5vw, 74px)' :
+  total <= 12 ? 'clamp(36px, 9vw, 62px)' :
+  'clamp(30px, 7.5vw, 52px)';
+
 /* ---------- случайности ---------- */
 
 FX.rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
