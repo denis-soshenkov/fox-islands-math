@@ -49,16 +49,24 @@ http.createServer((req, res) => {
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
 
   if (req.method === 'GET' && req.url === '/api/health') {
+    let credentialOk = false;
+    try { credentialOk = !!firebaseApp(); } catch (e) { credentialOk = false; }
     return send(res, 200, {
       ok: true,
-      configured: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+      configured: !!process.env.FIREBASE_SERVICE_ACCOUNT_JSON,
+      credential_ok: credentialOk
     });
   }
 
   if (req.method !== 'POST' || req.url !== '/api/auth/yandex') {
     return send(res, 404, { error: 'not_found' });
   }
-  if (!firebaseApp()) return send(res, 503, { error: 'service_account_not_configured' });
+  let fbApp = null;
+  try { fbApp = firebaseApp(); } catch (e) {
+    console.error('bad service account:', e && e.message);
+    return send(res, 500, { error: 'bad_service_account' });
+  }
+  if (!fbApp) return send(res, 503, { error: 'service_account_not_configured' });
 
   let body = '';
   req.on('data', c => {

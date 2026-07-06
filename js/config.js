@@ -23,7 +23,7 @@ FX.CONFIG = {
      Скопируйте ClientID сюда. Пока пусто — кнопка Яндекса скрыта.
      Единый облачный прогресс для Яндекс-входа дополнительно требует
      FIREBASE_SERVICE_ACCOUNT_JSON на сервере (см. README). */
-  yandexClientId: '',
+  yandexClientId: 'ebbf800ceb624f3e894cad0f681eeb67',
 
   /* Облачная синхронизация прогресса.
      Firebase Console (https://console.firebase.google.com):
