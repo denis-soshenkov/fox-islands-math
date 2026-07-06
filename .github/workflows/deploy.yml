@@ -30,10 +30,11 @@ jobs:
           done
           node -e "JSON.parse(require('fs').readFileSync('manifest.json','utf8')); console.log('ok: manifest.json')"
 
-  # --- GitHub Pages: https://game.eropulsars.com (после настройки DNS) ---
+  # --- GitHub Pages: резервное зеркало на github.io (прод — VPS) ---
   pages:
     needs: check
     runs-on: ubuntu-latest
+    continue-on-error: true
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -48,7 +49,6 @@ jobs:
             --exclude 'Dockerfile' --exclude 'docker-compose.yml' \
             --exclude 'nginx.conf' --exclude '.dockerignore' \
             ./ /tmp/public/
-          echo 'game.eropulsars.com' > /tmp/public/CNAME
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
