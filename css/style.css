@@ -658,6 +658,7 @@ button { font-family: inherit; color: inherit; }
   display: grid;
   gap: clamp(8px, 1.6vw, 16px);
   width: min(640px, 100%);
+  max-width: 100%;
 }
 .shape-cell {
   cursor: pointer;
@@ -666,6 +667,8 @@ button { font-family: inherit; color: inherit; }
   border-radius: 18px;
   box-shadow: 0 5px 0 #d8dcea;
   aspect-ratio: 1;
+  min-width: 0;   /* не даём ячейкам распирать сетку на телефонах */
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -762,8 +765,8 @@ button { font-family: inherit; color: inherit; }
 
 .mem-grid { display: grid; gap: clamp(8px, 1.6vw, 14px); }
 .mem-card {
-  width: clamp(70px, 13.5vw, 116px);
-  height: clamp(88px, 16.5vw, 140px);
+  width: clamp(56px, 13vw, 116px);
+  height: clamp(72px, 16vw, 140px);
   perspective: 700px;
   cursor: pointer;
   border: none;
@@ -1043,8 +1046,25 @@ button { font-family: inherit; color: inherit; }
    ============================================================ */
 
 .draggable { touch-action: none; cursor: grab; }
-.dragging { z-index: 80; position: relative; }
+.dragging {
+  z-index: 80;
+  position: relative;
+  animation: none !important;   /* иначе pop-in и т.п. перекрывают transform */
+  transition: none !important;
+  filter: drop-shadow(0 10px 14px rgba(53, 64, 90, .35));
+}
 .drag-return { transition: transform .3s cubic-bezier(.2, 1.2, .4, 1); }
+
+/* пока тащим — подсвечиваем, куда можно бросить */
+body.fx-dragging .drop-zone {
+  outline: 3px dashed #4D96FF;
+  outline-offset: 4px;
+  animation: dropPulse 1s ease-in-out infinite;
+}
+@keyframes dropPulse {
+  0%, 100% { outline-color: rgba(77, 150, 255, .35); }
+  50%      { outline-color: rgba(77, 150, 255, .95); }
+}
 
 /* что лишнее */
 .odd-row .num-btn.huge {
@@ -1210,7 +1230,7 @@ button { font-family: inherit; color: inherit; }
 }
 
 /* плотная сетка памяти (8 пар) */
-.mem-grid.dense .mem-card { width: clamp(58px, 12vw, 96px); height: clamp(74px, 15vw, 118px); }
+.mem-grid.dense .mem-card { width: clamp(48px, 11vw, 96px); height: clamp(62px, 14vw, 118px); }
 
 /* горизонтальное зеркало */
 .sym-mirror-line.h {

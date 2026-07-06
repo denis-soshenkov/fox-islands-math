@@ -4,7 +4,7 @@
    Стратегия stale-while-revalidate: отдаём из кэша мгновенно,
    в фоне обновляем. Навигация без сети падает на index.html. */
 
-const VERSION = 'fox-islands-v4';
+const VERSION = 'fox-islands-v6';
 
 const ASSETS = [
   './',
@@ -46,7 +46,11 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(VERSION).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(VERSION)
+      /* cache:'reload' — мимо HTTP-кэша браузера, иначе в прекэш
+         попадают устаревшие файлы (max-age на сервере) */
+      .then(c => c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -66,7 +70,9 @@ self.addEventListener('fetch', e => {
 
   e.respondWith(
     caches.open(VERSION).then(async cache => {
-      const cached = await cache.match(req, { ignoreSearch: req.mode === 'navigate' });
+      /* ignoreSearch: страница запрашивает файлы с ?v=N (обход HTTP-кэша),
+         а в прекэше они лежат без параметров */
+      const cached = await cache.match(req, { ignoreSearch: true });
       const network = fetch(req)
         .then(res => {
           if (res && res.ok) cache.put(req, res.clone());

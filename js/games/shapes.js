@@ -118,7 +118,8 @@
 
       let found = 0;
       const grid = FX.el('div', 'shape-grid');
-      grid.style.gridTemplateColumns = 'repeat(' + cfg.cols + ', 1fr)';
+      /* minmax(0,1fr): треки никогда не шире контейнера (фикс телефонов) */
+      grid.style.gridTemplateColumns = 'repeat(' + cfg.cols + ', minmax(0, 1fr))';
 
       board.forEach(cellDef => {
         const cell = FX.el('button', 'shape-cell');
