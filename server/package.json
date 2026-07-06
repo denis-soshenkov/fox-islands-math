@@ -1,0 +1,13 @@
+{
+  "name": "fox-islands-auth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Обмен Яндекс OAuth-токена на Firebase custom token (единый облачный прогресс)",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.3.0"
+  }
+}

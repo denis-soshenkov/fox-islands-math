@@ -4,5 +4,12 @@
 
 game.eropulsars.com {
 	encode gzip
-	reverse_proxy game:80
+
+	handle /api/* {
+		reverse_proxy auth:8080
+	}
+
+	handle {
+		reverse_proxy game:80
+	}
 }

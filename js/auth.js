@@ -123,6 +123,85 @@ FX.auth = {
     }).catch(() => handlers.onError('load_failed'));
   },
 
+  /* ---------- Яндекс ID (OAuth implicit flow, редирект) ----------
+     Без бэкенда: уходим на oauth.yandex.ru, возвращаемся с
+     #access_token=…, меняем его на профиль через login.yandex.ru. */
+
+  yandexEnabled() {
+    return !!((FX.CONFIG && FX.CONFIG.yandexClientId) || '').trim();
+  },
+
+  yandexRedirectUri() {
+    return location.origin + location.pathname;
+  },
+
+  signInYandex() {
+    const cid = ((FX.CONFIG && FX.CONFIG.yandexClientId) || '').trim();
+    if (!cid) return;
+    location.href = 'https://oauth.yandex.ru/authorize' +
+      '?response_type=token' +
+      '&client_id=' + encodeURIComponent(cid) +
+      '&redirect_uri=' + encodeURIComponent(this.yandexRedirectUri());
+  },
+
+  _parseYandexHash(hash) {
+    if (!hash || hash.indexOf('access_token=') === -1) return null;
+    return new URLSearchParams(hash.replace(/^#/, '')).get('access_token');
+  },
+
+  /* профиль по токену; если CORS не пустит — резерв через JSONP */
+  _yandexInfo(token) {
+    return fetch('https://login.yandex.ru/info?format=json', {
+      headers: { Authorization: 'OAuth ' + token }
+    }).then(r => {
+      if (!r.ok) throw new Error('info ' + r.status);
+      return r.json();
+    }).catch(() => new Promise((resolve, reject) => {
+      const cb = '__yaInfo' + Date.now();
+      const s = document.createElement('script');
+      window[cb] = data => { delete window[cb]; s.remove(); resolve(data); };
+      s.onerror = () => { delete window[cb]; s.remove(); reject(new Error('jsonp')); };
+      s.src = 'https://login.yandex.ru/info?format=jsonp&callback=' + cb +
+              '&oauth_token=' + encodeURIComponent(token);
+      document.head.appendChild(s);
+    }));
+  },
+
+  _finishYandex(token) {
+    return this._yandexInfo(token).then(info => {
+      if (!info || !info.id) throw new Error('нет профиля');
+      FX.auth.set({
+        provider: 'yandex',
+        id: String(info.id),
+        name: info.first_name || info.display_name || info.login || 'Игрок',
+        fullName: info.real_name || info.display_name || '',
+        avatar: (info.default_avatar_id && !info.is_avatar_empty)
+          ? 'https://avatars.yandex.net/get-yapic/' + info.default_avatar_id + '/islands-200'
+          : '',
+        email: info.default_email || '',
+        yaToken: token /* для связки с облаком (Firebase custom token) */
+      });
+      /* единый облачный прогресс аккаунта: связываем с Firebase */
+      if (window.FX.cloud && FX.cloud.enabled()) FX.cloud.exchangeYandex(token);
+      return true;
+    });
+  },
+
+  renderYandexButton(container, handlers) {
+    if (!this.yandexEnabled()) return;
+    const btn = FX.el('button', 'btn yandex', '<span class="ymark">Я</span> Войти с Яндекс ID');
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      try {
+        FX.auth.signInYandex();
+      } catch (e) {
+        btn.disabled = false;
+        if (handlers && handlers.onError) handlers.onError('yandex_failed');
+      }
+    });
+    container.appendChild(btn);
+  },
+
   /* payload ID-токена (base64url → JSON, с поддержкой кириллицы) */
   decodeJwt(token) {
     try {
@@ -135,3 +214,16 @@ FX.auth = {
 };
 
 FX.auth.load();
+
+/* Возврат с oauth.yandex.ru (#access_token=…): токен вычищается из
+   адреса сразу, профиль подтягивается асинхронно — движок покажет
+   экран входа с заметкой и сам перейдёт домой после завершения. */
+FX.auth.yandexPending = (() => {
+  const token = FX.auth._parseYandexHash(location.hash);
+  if (!token) return null;
+  try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  return FX.auth._finishYandex(token).catch(e => {
+    console.warn('Яндекс-вход не удался:', e && e.message);
+    return false;
+  });
+})();

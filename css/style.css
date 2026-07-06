@@ -1308,6 +1308,30 @@ body.fx-dragging .drop-zone {
   font-size: 19px;
 }
 
+/* кнопка «Войти с Яндекс ID» */
+.btn.yandex {
+  background: #000;
+  color: #fff;
+  box-shadow: 0 5px 0 #3a3a3a;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn.yandex:active { box-shadow: 0 1px 0 #3a3a3a; }
+.btn.yandex .ymark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #FC3F1D;
+  color: #fff;
+  font-weight: 800;
+  font-size: 17px;
+}
+
 .profile-chip {
   position: absolute;
   top: max(12px, env(safe-area-inset-top));

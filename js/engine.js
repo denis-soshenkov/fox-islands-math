@@ -138,8 +138,10 @@
 
     const card = FX.el('div', 'login-card');
     const gwrap = FX.el('div', 'g-btn-wrap');
+    const ywrap = FX.el('div', 'g-btn-wrap');
     const note = FX.el('div', 'login-note');
     card.appendChild(gwrap);
+    card.appendChild(ywrap);
     card.appendChild(note);
     card.appendChild(FX.el('div', 'login-divider', 'или'));
 
@@ -154,8 +156,9 @@
     card.appendChild(guest);
 
     card.appendChild(FX.el('p', 'login-hint',
-      'Вход через Google даст профилю имя и аватар, а прогресс будет вестись отдельно ' +
-      'для каждого игрока. Выбор запоминается на этом устройстве — входить каждый раз не нужно.'));
+      'Google и Яндекс — просто способы входа: прогресс привязан к учётной записи, ' +
+      'хранится в облаке и одинаков на всех устройствах. Выбор запоминается — ' +
+      'входить каждый раз не нужно.'));
     s.appendChild(card);
 
     FX.auth.renderGoogleButton(gwrap, {
@@ -174,6 +177,17 @@
         note.textContent = msgs[code] || 'Google-вход недоступен.';
       }
     });
+
+    FX.auth.renderYandexButton(ywrap, {
+      onError: () => { note.textContent = 'Яндекс-вход недоступен. Попробуй ещё раз.'; }
+    });
+
+    if (FX.auth.yandexPending) {
+      note.textContent = '⏳ Входим через Яндекс…';
+    } else if (FX.auth.yandexError) {
+      note.textContent = 'Не получилось войти через Яндекс. Попробуй ещё раз или играй как гость.';
+      FX.auth.yandexError = false;
+    }
 
     switchScreen('login');
   }
@@ -631,7 +645,9 @@
     const accText = p
       ? (p.provider === 'google'
           ? '<b>' + (p.fullName || p.name) + '</b> · вход через Google' + (p.email ? ' (' + p.email + ')' : '')
-          : '<b>Гость</b> · без входа')
+          : p.provider === 'yandex'
+            ? '<b>' + (p.fullName || p.name) + '</b> · вход через Яндекс' + (p.email ? ' (' + p.email + ')' : '')
+            : '<b>Гость</b> · без входа')
       : 'Профиль не выбран';
     acc.appendChild(FX.el('span', null, accText));
     const switchBtn = FX.el('button', 'btn small lilac', 'Сменить профиль');
@@ -645,8 +661,8 @@
     acc.appendChild(switchBtn);
     card.appendChild(acc);
 
-    /* состояние облачной синхронизации */
-    if (FX.cloud.enabled() && p && p.provider === 'google') {
+    /* состояние облачной синхронизации (единая для Google и Яндекса) */
+    if (FX.cloud.enabled() && p && (p.provider === 'google' || p.provider === 'yandex')) {
       const cloudRow = FX.el('div', 'account-row');
       const status = FX.el('span', null, FX.cloud.lastSync
         ? '☁️ Синхронизировано: ' + FX.cloud.lastSync.toLocaleTimeString('ru-RU')
@@ -717,6 +733,22 @@
   };
   FX.cloud.init();
 
-  if (FX.auth.current) showHome();
-  else showLogin();
+  if (FX.auth.yandexPending) {
+    /* вернулись с oauth.yandex.ru — ждём профиль */
+    showLogin();
+    FX.auth.yandexPending.then(ok => {
+      FX.auth.yandexPending = null;
+      if (ok) {
+        FX.progress.reload();
+        showHome();
+      } else {
+        FX.auth.yandexError = true;
+        if (screens.login.classList.contains('active')) showLogin();
+      }
+    });
+  } else if (FX.auth.current) {
+    showHome();
+  } else {
+    showLogin();
+  }
 })();

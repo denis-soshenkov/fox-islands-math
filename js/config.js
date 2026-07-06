@@ -15,6 +15,16 @@ FX.CONFIG = {
      Authorized JavaScript origins: http://localhost:8899, https://game.eropulsars.com */
   googleClientId: '720868305351-g8hhkcq0hd8prhgk2h88aenl3h08iop3.apps.googleusercontent.com',
 
+  /* «Войти с Яндекс ID» (OAuth, без бэкенда для самого входа).
+     https://oauth.yandex.ru → Создать приложение → Веб-сервисы:
+       Redirect URI: https://game.eropulsars.com/  и  http://localhost:8899/
+       Доступы: «Доступ к логину, имени и фамилии», «Доступ к портрету»,
+                (по желанию) «Доступ к адресу электронной почты».
+     Скопируйте ClientID сюда. Пока пусто — кнопка Яндекса скрыта.
+     Единый облачный прогресс для Яндекс-входа дополнительно требует
+     FIREBASE_SERVICE_ACCOUNT_JSON на сервере (см. README). */
+  yandexClientId: '',
+
   /* Облачная синхронизация прогресса.
      Firebase Console (https://console.firebase.google.com):
        1. Create project → Add app → Web (</>) — скопируйте firebaseConfig сюда.

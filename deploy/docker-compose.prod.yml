@@ -1,5 +1,6 @@
-# Прод-стек на VPS: игра в контейнере + Caddy с автоматическим HTTPS.
+# Прод-стек на VPS: игра + сервис авторизации + Caddy с автоматическим HTTPS.
 # Запуск на сервере: docker compose -f deploy/docker-compose.prod.yml up -d --build
+# Секрет FIREBASE_SERVICE_ACCOUNT_JSON compose берёт из /opt/fox-islands/.env
 services:
   game:
     build:
@@ -9,6 +10,17 @@ services:
     restart: unless-stopped
     expose:
       - "80"
+
+  auth:
+    build:
+      context: ../server
+    image: fox-islands-auth:prod
+    container_name: fox-islands-auth
+    restart: unless-stopped
+    environment:
+      - FIREBASE_SERVICE_ACCOUNT_JSON=${FIREBASE_SERVICE_ACCOUNT_JSON:-}
+    expose:
+      - "8080"
 
   caddy:
     image: caddy:2-alpine

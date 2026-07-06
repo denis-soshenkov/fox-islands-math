@@ -56,6 +56,12 @@ FX.cloud = {
       try { await this.auth.getRedirectResult(); } catch (e) { /* redirect мог не быть */ }
       this.ready = true;
       this.auth.onAuthStateChanged(u => this._onUser(u));
+      /* яндекс-профиль без связки с Firebase (например, сервис был
+         недоступен при входе) — пробуем связать ещё раз */
+      const s = FX.auth.current;
+      if (s && s.provider === 'yandex' && s.yaToken && !this.auth.currentUser) {
+        this.exchangeYandex(s.yaToken);
+      }
     })().catch(e => {
       console.warn('Firebase недоступен (офлайн?):', e && e.message);
       this._initing = null;
@@ -63,12 +69,20 @@ FX.cloud = {
     return this._initing;
   },
 
+  /* uid в Firebase: google — родной uid, яндекс — 'yandex:<id>' (custom token) */
+  expectedUid(s) {
+    return s.provider === 'google' ? s.id : s.provider + ':' + s.id;
+  },
+
   /* Firebase сообщил о пользователе: чиним сессию устройства и синкаем */
   _onUser(u) {
     if (!u) return;
     const s = FX.auth.current;
-    const wasLoggedOut = !s || s.provider !== 'google' || s.id !== u.uid;
-    if (wasLoggedOut) {
+    if (s && this.expectedUid(s) !== u.uid) return; // активен другой профиль — не трогаем
+    if (!s) {
+      /* восстановление после redirect/переустановки: только google —
+         у яндекс-пользователя профиль (имя/аватар) живёт в сессии */
+      if (u.uid.indexOf('yandex:') === 0) return;
       FX.auth.set({
         provider: 'google',
         id: u.uid,
@@ -81,6 +95,29 @@ FX.cloud = {
       if (this.onAuthRestored) this.onAuthRestored();
     }
     this.syncNow();
+  },
+
+  /* Яндекс → Firebase: меняем OAuth-токен на custom token через
+     наш мини-сервис (/api/auth/yandex). После этого облачный прогресс
+     работает одинаково для Google и Яндекса. */
+  async exchangeYandex(yaToken) {
+    if (!yaToken) return false;
+    await this.init();
+    if (!this.ready) return false;
+    try {
+      const res = await fetch('/api/auth/yandex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ access_token: yaToken })
+      });
+      if (!res.ok) throw new Error('exchange ' + res.status);
+      const data = await res.json();
+      await this.auth.signInWithCustomToken(data.token); // onAuthStateChanged → syncNow
+      return true;
+    } catch (e) {
+      console.warn('Яндекс-профиль пока без облака:', e && e.message);
+      return false;
+    }
   },
 
   async signInWithGoogle() {

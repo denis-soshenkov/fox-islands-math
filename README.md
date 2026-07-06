@@ -33,31 +33,59 @@ Google работают только по http(s) — localhost подходит
 После установки игра запускается в полный экран без браузерных панелей и полностью
 работает офлайн (все ресурсы кэширует service worker `sw.js`).
 
-## 👤 Вход через Google и сессия устройства
+## 👤 Вход (Google / Яндекс) и единый прогресс аккаунта
 
-- При первом запуске игра спрашивает: «Войти через Google» или «Играть без входа».
-- Выбор запоминается **на устройстве** (localStorage): при следующих запусках
-  логиниться не нужно — сразу открывается игра, в том числе офлайн.
-- Прогресс (звёзды, открытые уровни) хранится **отдельно для каждого профиля**.
+Google и Яндекс — **только способы входа**: прогресс привязан к учётной записи,
+хранится в Firestore (документ `progress/{uid}`) и одинаков на всех устройствах,
+где выполнен вход этим аккаунтом.
+
+- При первом запуске: «Войти через Google», «Войти с Яндекс ID» или «Играть без входа».
+- Выбор запоминается **на устройстве**: при следующих запусках логиниться не
+  нужно — игра открывается сразу, в том числе офлайн.
+- Локально прогресс ведётся отдельно для каждого профиля и при появлении сети
+  сливается с облаком «по максимуму звёзд».
 - Сменить профиль / выйти: карта → удерживать ⚙️ 1,5 сек → «Сменить профиль».
 
-### Как включить кнопку Google
+### Google
 
-Вход работает без сервера (Google Identity Services, только клиент). Нужен ваш
-Client ID:
+1. [console.cloud.google.com](https://console.cloud.google.com) → Credentials →
+   **OAuth client ID → Web application**; в Authorized JavaScript origins —
+   `http://localhost:8899` и `https://game.eropulsars.com`.
+2. Client ID → `googleClientId` в [js/config.js](js/config.js).
+   (При настроенном Firebase вход идёт через Firebase Auth — облако сразу работает.)
 
-1. [console.cloud.google.com](https://console.cloud.google.com) → APIs & Services →
-   Credentials → **Create Credentials → OAuth client ID → Web application**.
-2. В **Authorized JavaScript origins** добавьте адреса игры, например
-   `http://localhost:8899` и `https://ваш-домен`.
-3. Полученный Client ID (`1234…apps.googleusercontent.com`) вставьте в
-   [js/config.js](js/config.js):
+### Яндекс
 
-```js
-FX.CONFIG = { googleClientId: '1234….apps.googleusercontent.com' };
+1. [oauth.yandex.ru](https://oauth.yandex.ru) → **Создать приложение** →
+   платформа «Веб-сервисы»; **Redirect URI**: `https://game.eropulsars.com/`
+   и `http://localhost:8899/`.
+2. Доступы: «Доступ к логину, имени и фамилии», «Доступ к портрету»
+   (по желанию — к адресу почты).
+3. ClientID → `yandexClientId` в [js/config.js](js/config.js).
+
+Вход сделан OAuth-редиректом (без попапов — надёжно в установленном PWA);
+профиль (имя, аватар) берётся из `login.yandex.ru`.
+
+### Единое облако для Яндекс-входа (сервис на VPS)
+
+Firestore пускает только пользователей Firebase, поэтому Яндекс-токен меняется
+на Firebase custom token (uid `yandex:<id>`) крошечным сервисом
+[server/](server/index.js) — он уже включён в docker-стек (`/api/auth/yandex`
+через Caddy). Сервису нужен **сервисный ключ Firebase**:
+
+1. Firebase Console → ⚙️ Project settings → **Service accounts** →
+   **Generate new private key** (скачается JSON).
+2. На сервере положите его одной строкой в `/opt/fox-islands/.env`:
+
+```bash
+FIREBASE_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"alice-a4d13",...}'
 ```
 
-Пока Client ID не задан, доступен гостевой профиль (вся игра работает полностью).
+3. `docker compose -f deploy/docker-compose.prod.yml up -d` — готово.
+   Проверка: `curl https://game.eropulsars.com/api/health` → `"configured": true`.
+
+Пока ключа нет, Яндекс-вход всё равно работает (профиль на устройстве),
+а облачная синхронизация включится автоматически после настройки.
 
 ## ☁️ Облачная синхронизация (Firebase)
 
