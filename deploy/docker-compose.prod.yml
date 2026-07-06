@@ -1,6 +1,7 @@
 # Прод-стек на VPS: игра + сервис авторизации + Caddy с автоматическим HTTPS.
 # Запуск на сервере: docker compose -f deploy/docker-compose.prod.yml up -d --build
-# Секрет FIREBASE_SERVICE_ACCOUNT_JSON compose берёт из /opt/fox-islands/.env
+# Секрет FIREBASE_SERVICE_ACCOUNT_JSON compose берёт из deploy/.env
+# (каталог compose-файла; rsync-деплой файлы .env* не трогает)
 services:
   game:
     build:
